@@ -1,31 +1,31 @@
 Language: Cpp
 BasedOnStyle: LLVM
 
-AlignConsecutiveAssignments: true
-NamespaceIndentation: All
+# AlignConsecutiveAssignments: true
+# NamespaceIndentation: All
 
-# 每行一个 Parameter
-AlignAfterOpenBracket: BlockIndent
-AllowAllParametersOfDeclarationOnNextLine: false
-BinPackParameters: true
-BinPackArguments: false
+# # 每行一个 Parameter
+# AlignAfterOpenBracket: BlockIndent
+# AllowAllParametersOfDeclarationOnNextLine: false
+# BinPackParameters: true
+# BinPackArguments: false
 
-TabWidth: 2
-IndentWidth: 2
-UseTab: Never
-# Short statements
-AllowShortLoopsOnASingleLine: true
-AllowShortIfStatementsOnASingleLine: AllIfsAndElse
-AllowShortFunctionsOnASingleLine: All
-AllowShortCaseLabelsOnASingleLine: true
-AllowShortBlocksOnASingleLine: Always
-PackConstructorInitializers: NextLine
-IndentCaseLabels: true
+# TabWidth: 2
+# IndentWidth: 2
+# UseTab: Never
+# # Short statements
+# AllowShortLoopsOnASingleLine: true
+# AllowShortIfStatementsOnASingleLine: AllIfsAndElse
+# AllowShortFunctionsOnASingleLine: All
+# AllowShortCaseLabelsOnASingleLine: true
+# AllowShortBlocksOnASingleLine: Always
+# PackConstructorInitializers: NextLine
+# IndentCaseLabels: true
 
-ColumnLimit: 400
-AlwaysBreakTemplateDeclarations: true
-BreakBeforeTernaryOperators: true
-# Expression
+# ColumnLimit: 80
+# AlwaysBreakTemplateDeclarations: true
+# BreakBeforeTernaryOperators: true
+# # Expression
 # AlignOperands: AlignAfterOperator
 # BreakBeforeBinaryOperators: All
 

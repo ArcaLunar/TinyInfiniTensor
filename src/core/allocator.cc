@@ -22,24 +22,60 @@ namespace infini {
     // pad the size to the multiple of alignment
     size = this->getAlignedSize(size);
 
-    // =================================== 作业
-    // ===================================
     // TODO: 设计一个算法来分配内存，返回起始地址偏移量
-    // =================================== 作业
-    // ===================================
+    size_t addr = 0;
+    // first, find a free block that fits
+    for (auto it = free_blocks.begin(); it != free_blocks.end(); ++it) {
+      if (it->second < size) continue;
 
-    return 0;
+      // block found, tailor from end
+      it->second -= size;
+      addr = it->first + it->second;
+      if (it->second == 0) free_blocks.erase(it);
+      return addr;
+    }
+
+    // if no, allocate the memory at the end
+    addr = used;
+    used += size;
+    if (used > peak) peak = used;
+    return addr;
   }
 
   void Allocator::free(size_t addr, size_t size) {
     IT_ASSERT(this->ptr == nullptr);
     size = getAlignedSize(size);
 
-    // =================================== 作业
-    // ===================================
     // TODO: 设计一个算法来回收内存
-    // =================================== 作业
-    // ===================================
+
+    // first, insert
+    auto it = free_blocks.insert(std::pair{addr, size}).first; // iterator to the newly inserted block
+
+    // second, find if the newly released block can be merged with existing free blocks
+    // 1. look to its left
+    if (it != free_blocks.begin()) {
+      auto next = std::prev(it);
+      while (next != free_blocks.begin()) {
+        if (next->first + next->second == it->first) {
+          // merge
+          next->second += it->second;
+          free_blocks.erase(it);
+        } else break;
+        it = next, next--;
+      }
+    }
+
+    // 2. look to its right
+    if (it != free_blocks.end() && std::next(it) != free_blocks.end()) {
+      auto next = std::next(it);
+      while (next != free_blocks.end()) {
+        if (it->first + it->second == next->first) {
+          it->second += next->second;
+          free_blocks.erase(next);
+        } else break;
+        it++, next = std::next(it);
+      }
+    }
   }
 
   void *Allocator::getPtr() {
