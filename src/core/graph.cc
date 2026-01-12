@@ -1,4 +1,5 @@
 #include "core/graph.h"
+#include "core/runtime.h"
 #include <algorithm>
 #include <numeric>
 #include <queue>
@@ -126,13 +127,25 @@ void GraphObj::dataMalloc() {
   // topological sorting first
   IT_ASSERT(topo_sort() == true);
 
-  // =================================== 作业
-  // ===================================
   // TODO：利用 allocator 给计算图分配内存
   // HINT: 获取分配好的内存指针后，可以调用 tensor 的 setDataBlob 函数给 tensor
   // 绑定内存
-  // =================================== 作业
-  // ===================================
+
+  // iterator over tensor to allocate logical memory
+  std::vector<size_t> offsets; // cache offsets
+  for (const auto &tensor : tensors) {
+    size_t size = tensor->getBytes();
+    size_t offset = allocator.alloc(size);
+    offsets.push_back(offset);
+  }
+
+  auto ptr = allocator.getPtr();
+  for (size_t i = 0; i < tensors.size(); ++i) {
+    auto &tensor = tensors[i];
+    size_t offset = offsets[i];
+    Blob blob = make_ref<BlobObj>(runtime, (void *)((size_t)ptr + offset));
+    tensor->setDataBlob(blob);
+  }
 
   allocator.info();
 }
