@@ -4,7 +4,7 @@
 
 namespace infini {
 
-class Exception : public std::runtime_error {
+  class Exception : public std::runtime_error {
   protected:
     std::string info;
 
@@ -12,11 +12,11 @@ class Exception : public std::runtime_error {
     Exception(const std::string &msg);
 
     Exception &operator<<(const std::string &str) {
-        info += str;
-        return *this;
+      info += str;
+      return *this;
     }
 
     const char *what() const noexcept override { return info.c_str(); }
-};
+  };
 
 } // namespace infini

@@ -2,12 +2,12 @@
 #include "core/operator.h"
 
 namespace infini {
-/**
- * @brief Concatenate several tensors into one. All the input tensors should
- * have the same shape except for the concatenated dimension.
- *
- */
-class ConcatObj : public OperatorObj {
+  /**
+   * @brief Concatenate several tensors into one. All the input tensors should
+   * have the same shape except for the concatenated dimension.
+   *
+   */
+  class ConcatObj : public OperatorObj {
     int dim;
 
   public:
@@ -28,5 +28,5 @@ class ConcatObj : public OperatorObj {
     int numInputs() const override { return inputs.size(); }
     int numOutputs() const override { return 1; }
     int getDim() const { return dim; }
-};
+  };
 } // namespace infini

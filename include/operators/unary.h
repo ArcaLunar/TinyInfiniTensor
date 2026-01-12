@@ -1,14 +1,12 @@
 #pragma once
 #include "core/operator.h"
 
-namespace infini
-{
+namespace infini {
   /**
    * @brief The base class for unary operators.
    *
    */
-  class UnaryObj : public OperatorObj
-  {
+  class UnaryObj : public OperatorObj {
   public:
     /**
      * @brief Construct a new Unary object.
@@ -26,11 +24,9 @@ namespace infini
     int numOutputs() const override { return 1; }
   };
 
-  class ClipObj : public OperatorObj
-  {
+  class ClipObj : public OperatorObj {
   public:
-    ClipObj(GraphObj *graph, Tensor input, Tensor output,
-            std::optional<float> min, std::optional<float> max);
+    ClipObj(GraphObj *graph, Tensor input, Tensor output, std::optional<float> min, std::optional<float> max);
     OP_CLONE(ClipObj);
     optional<vector<Shape>> inferShape(const TensorVec &inputs) override;
 
@@ -44,8 +40,7 @@ namespace infini
     std::optional<float> minValue, maxValue;
   };
 
-  enum class CastType
-  {
+  enum class CastType {
     Float2Float16 = 0,
     Float2Int64,
     Float2Int32,
@@ -73,8 +68,7 @@ namespace infini
     Float2Float,
   };
 
-  class CastObj : public OperatorObj
-  {
+  class CastObj : public OperatorObj {
   public:
     CastObj(GraphObj *graph, Tensor input, Tensor output, CastType type);
     OP_CLONE(CastObj);
@@ -91,13 +85,11 @@ namespace infini
     CastType castType;
   };
 
-#define DEFINE_UNARY_OBJ(prefix, type)                        \
-  class prefix##Obj : public UnaryObj                         \
-  {                                                           \
-  public:                                                     \
-    prefix##Obj(GraphObj *graph, Tensor input, Tensor output) \
-        : UnaryObj(type, graph, input, output) {}             \
-    OP_CLONE(prefix##Obj);                                    \
+#define DEFINE_UNARY_OBJ(prefix, type)                                                                                                                                                                                                                                                                                                                                                                         \
+  class prefix##Obj : public UnaryObj {                                                                                                                                                                                                                                                                                                                                                                        \
+  public:                                                                                                                                                                                                                                                                                                                                                                                                      \
+    prefix##Obj(GraphObj *graph, Tensor input, Tensor output) : UnaryObj(type, graph, input, output) {}                                                                                                                                                                                                                                                                                                        \
+    OP_CLONE(prefix##Obj);                                                                                                                                                                                                                                                                                                                                                                                     \
   };
 
   DEFINE_UNARY_OBJ(Relu, OpType::Relu)

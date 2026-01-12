@@ -9,8 +9,7 @@
 #include <unordered_set>
 
 namespace infini {
-  class Allocator
-  {
+  class Allocator {
   private:
     Runtime runtime;
 
@@ -56,4 +55,4 @@ namespace infini {
     // return: size of the aligned memory block
     size_t getAlignedSize(size_t size);
   };
-}
+} // namespace infini

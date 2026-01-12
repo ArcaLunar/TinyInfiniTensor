@@ -5,19 +5,17 @@
 
 #include "test.h"
 
-namespace infini
-{
+namespace infini {
 
-    TEST(Cast, ShapeInference)
+  TEST(Cast, ShapeInference) {
+    Runtime runtime = NativeCpuRuntimeObj::getInstance();
     {
-        Runtime runtime = NativeCpuRuntimeObj::getInstance();
-        {
-            Graph g = make_ref<GraphObj>(runtime);
-            Tensor i0 = g->addTensor({2}, DataType::Float32);
-            auto op = g->addOp<CastObj>(i0, nullptr, CastType::Float2Float16);
-            EXPECT_EQ(op->getOutput()->getDims(), (Shape{2}));
-            EXPECT_EQ(op->getOutDType(), (DataType::Float16));
-        }
+      Graph g   = make_ref<GraphObj>(runtime);
+      Tensor i0 = g->addTensor({2}, DataType::Float32);
+      auto op   = g->addOp<CastObj>(i0, nullptr, CastType::Float2Float16);
+      EXPECT_EQ(op->getOutput()->getDims(), (Shape{2}));
+      EXPECT_EQ(op->getOutDType(), (DataType::Float16));
     }
+  }
 
 } // namespace infini

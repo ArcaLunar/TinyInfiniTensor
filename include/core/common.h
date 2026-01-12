@@ -16,17 +16,17 @@
 #include <vector>
 
 namespace infini {
-using std::list;
-using std::map;
-using std::optional;
-using std::pair;
-using std::set;
-using std::string;
-using std::tie;
-using std::to_string;
-using std::tuple;
-using std::unordered_map;
-using std::vector;
+  using std::list;
+  using std::map;
+  using std::optional;
+  using std::pair;
+  using std::set;
+  using std::string;
+  using std::tie;
+  using std::to_string;
+  using std::tuple;
+  using std::unordered_map;
+  using std::vector;
 
 // Metaprogramming utilities
 #define _CAT(A, B) A##B
@@ -36,12 +36,7 @@ using std::vector;
 #define _VA_SELECT(NAME, ...) _SELECT(NAME, _VA_SIZE(__VA_ARGS__))(__VA_ARGS__)
 
 // Assert: conditions should have no side effect
-#define _IT_ASSERT_2(condition, info)                                          \
-    static_cast<bool>(condition)                                               \
-        ? void(0)                                                              \
-        : throw ::infini::Exception(                                           \
-              std::string("[") + __FILE__ + ":" + std::to_string(__LINE__) +   \
-              "] Assertion failed (" + #condition + "): " + info)
+#define _IT_ASSERT_2(condition, info) static_cast<bool>(condition) ? void(0) : throw ::infini::Exception(std::string("[") + __FILE__ + ":" + std::to_string(__LINE__) + "] Assertion failed (" + #condition + "): " + info)
 #define _IT_ASSERT_1(condition) _IT_ASSERT_2(condition, "")
 #define IT_ASSERT(...) _VA_SELECT(_IT_ASSERT, __VA_ARGS__)
 
@@ -50,36 +45,35 @@ using std::vector;
 #define IT_ASSERT_TODO(condition) _IT_ASSERT_2(condition, "Unimplemented")
 #define IT_TODO_SKIP() puts("Unimplemented " __FILE__ ":" __LINE__)
 
-// std::to_underlying is avaiable since C++23
-template <typename T> auto enum_to_underlying(T e) {
+  // std::to_underlying is avaiable since C++23
+  template <typename T>
+  auto enum_to_underlying(T e) {
     return static_cast<std::underlying_type_t<T>>(e);
-}
+  }
 
-template <typename T> std::string vecToString(const std::vector<T> &vec) {
+  template <typename T>
+  std::string vecToString(const std::vector<T> &vec) {
     std::stringstream ss;
     ss << "[";
     for (size_t i = 0; i < vec.size(); ++i) {
-        ss << vec.at(i);
-        if (i < vec.size() - 1) {
-            ss << ",";
-        }
+      ss << vec.at(i);
+      if (i < vec.size() - 1) { ss << ","; }
     }
     ss << "]";
     return ss.str();
-}
+  }
 
-template <typename T> std::string vecToString(const T *st, size_t length) {
+  template <typename T>
+  std::string vecToString(const T *st, size_t length) {
     std::stringstream ss;
     ss << "[";
     size_t i = 0;
     for (i = 0; i < length; i++) {
-        ss << *(st + i);
-        if (i < length - 1) {
-            ss << ",";
-        }
+      ss << *(st + i);
+      if (i < length - 1) { ss << ","; }
     }
     ss << "]";
     return ss.str();
-}
+  }
 
 } // namespace infini
