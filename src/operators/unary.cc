@@ -51,24 +51,16 @@ CastObj::CastObj(GraphObj *graph, Tensor input, Tensor output, CastType type)
 }
 
 vector<DataType> CastObj::inferDataType(const TensorVec &inputs) const {
-  // =================================== 作业
-  // ===================================
   // TODO：返回经过 cast 操作后, 输出 tensor 的数目和数据类型
   // REF_FILE: src/core/operator.cc
   // REF: https://onnx.ai/onnx/operators/onnx__Cast.html#cast-21
-  // =================================== 作业
-  // ===================================
-  return {};
+  return vector(numOutputs(), getOutputDataType());
 }
 
 optional<vector<Shape>> CastObj::inferShape(const TensorVec &inputs) {
-  // =================================== 作业
-  // ===================================
   // TODO：返回经过 cast 操作后的 shape
   // REF: https://onnx.ai/onnx/operators/onnx__Cast.html#cast-21
-  // =================================== 作业
-  // ===================================
-  return std::nullopt;
+  return {{inputs[0]->getDims()}};
 }
 
 std::string CastObj::toString() const {
