@@ -46,3 +46,4 @@ build_debug/
 *.npy
 
 .cache/
+3rd-party/
