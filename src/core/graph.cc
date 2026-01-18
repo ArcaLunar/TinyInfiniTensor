@@ -1,6 +1,10 @@
 #include "core/graph.h"
+#include "core/op_type.h"
 #include "core/runtime.h"
+#include "operators/matmul.h"
+#include "operators/transpose.h"
 #include <algorithm>
+#include <memory>
 #include <numeric>
 #include <queue>
 
@@ -83,16 +87,185 @@ bool GraphObj::topo_sort() {
 }
 
 void GraphObj::optimize() {
-  // =================================== 作业
-  // ===================================
-  // TODO: 设计一个算法来实现指定的图优化规则
-  // 图优化规则如下：
-  // 1. 去除冗余的算子（例如，两个相邻的算子都是 transpose
-  // 算子，且做的是相反的操作，可以将其全部删除）
-  // 2.
-  // 合并算子（例如，矩阵乘算子中含有属性transA、transB，如果其输入存在transpose，且对最后两个维度做交换，就可以将transpose融入到矩阵乘算子的属性中去）
-  // =================================== 作业
-  // ===================================
+  using vi = std::vector<int>;
+  auto isInversePermute = [&](const vi &lhs, const vi &rhs) {
+    if (lhs.size() != rhs.size())
+      return false;
+    for (auto i = 0; i < (int)lhs.size(); ++i)
+      if (lhs[rhs[i]] != i)
+        return false;
+    return true;
+  };
+  auto transposeLast2dim = [&](const vi &perm) {
+    int n = perm.size();
+    if (n < 2)
+      return false;
+    for (int i = 0; i < n - 2; i++)
+      if (perm[i] != i)
+        return false;
+    return perm[n - 1] == n - 2 and perm[n - 2] == n - 1;
+  };
+  auto safeAddPredecessor = [&](const Operator &node, const Operator &pred) {
+    auto preds = node->getPredecessors();
+    if (pred && std::find(preds.begin(), preds.end(), pred) == preds.end())
+      node->addPredecessors(pred);
+  };
+  auto safeAddSuccessor = [&](const Operator &node, const Operator &succ) {
+    auto succs = node->getSuccessors();
+    if (succ && std::find(succs.begin(), succs.end(), succ) == succs.end())
+      node->addSuccessors(succ);
+  };
+  auto safeAddTarget = [&](const Tensor &t, const Operator &target) {
+    auto targets = t->getTargets();
+    if (target &&
+        std::find(targets.begin(), targets.end(), target) == targets.end())
+      t->addTarget(target);
+  };
+  auto removeTransposeOp = [&](const Operator &t) {
+    if (!t)
+      return;
+    for (auto &pred : t->getPredecessors()) {
+      pred->removeSuccessors(t);
+      t->removePredecessors(pred);
+    }
+    for (auto &succ : t->getSuccessors()) {
+      succ->removePredecessors(t);
+      t->removeSuccessors(succ);
+    }
+    for (auto &input : t->getInputs())
+      input->removeTarget(t);
+    auto outputs = t->getOutputs();
+    for (auto &output : outputs) {
+      for (auto &target : output->getTargets())
+        target->removePredecessors(t);
+      output->targets.clear();
+      output->source.reset();
+      removeTensor(output);
+    }
+    removeOperator(t);
+  };
+
+  bool updated = false;
+  do {
+    updated = false;
+
+    // STEP 1: remove 2 transposes
+    for (auto &op : ops) {
+      if (op->getOpType() != OpType::Transpose)
+        continue;
+      auto successors = op->getSuccessors();
+      if (successors.size() != 1)
+        continue;
+      auto successor = successors.front();
+      if (successor->getOpType() != OpType::Transpose)
+        continue;
+
+      auto trans1 = std::dynamic_pointer_cast<TransposeObj>(op);
+      auto trans2 = std::dynamic_pointer_cast<TransposeObj>(successor);
+      if (!isInversePermute(trans1->getPermute(), trans2->getPermute()))
+        continue;
+
+      // find replaces, make modifications
+      auto inputTensor = op->getInputs(0);
+      auto inputSource = inputTensor->getSource();
+      auto midTensor = op->getOutput();
+      auto outputTensor = trans2->getOutput();
+      auto consumerOps = trans2->getSuccessors();
+
+      // inputSource[op] -> inputTensor -> tran1(op) -> midTensor ->
+      // trans2(successor) -> outputTensor -> consumerOps
+      // === changes to ===
+      // inputSource -> inputTensor -> consumerOps
+      for (auto &consumerOp : consumerOps) {
+        consumerOp->replaceInput(outputTensor, inputTensor);
+
+        consumerOp->removePredecessors(trans2);
+        trans2->removeSuccessors(consumerOp);
+
+        if (inputSource) {
+          safeAddSuccessor(inputSource, consumerOp);
+          safeAddPredecessor(consumerOp, inputSource);
+        }
+        outputTensor->removeTarget(consumerOp);
+        safeAddTarget(inputTensor, consumerOp);
+      }
+
+      inputTensor->removeTarget(trans1);
+      if (inputSource) {
+        inputSource->removeSuccessors(trans1);
+        trans1->removePredecessors(inputSource);
+      }
+      midTensor->removeTarget(trans2);
+      midTensor->source.reset();
+      trans2->removePredecessors(trans1);
+      trans1->removeSuccessors(trans2);
+      outputTensor->source.reset();
+
+      removeTransposeOp(trans1);
+      removeTransposeOp(trans2);
+      sorted = false;
+      updated = true;
+      break;
+    }
+
+    if (updated)
+      continue;
+
+    // STEP 2: merge transposes into matmul
+    for (auto &op : ops) {
+      if (op->getOpType() != OpType::MatMul)
+        continue;
+
+      // input1[tensor] -> trans1[op] -> output1[tensor]
+      // input2[tensor] -> trans2[op] -> output2[tensor]
+      // output1, output2 -> MatmulObj[op](transA, transB) -> outputMatmul
+      auto matmul = std::dynamic_pointer_cast<MatmulObj>(op);
+      auto inputsNum = std::min(2, matmul->numInputs());
+      assert(inputsNum == 2);
+      bool fused = false;
+
+      for (int idx = 0; idx < 2; idx++) {
+        auto outputTensor = matmul->getInputs(idx);
+        auto op = outputTensor->getSource();
+        if (!op or op->getOpType() != OpType::Transpose)
+          continue;
+        auto trans = std::dynamic_pointer_cast<TransposeObj>(op);
+        auto permute = trans->getPermute();
+        if (!transposeLast2dim(permute))
+          continue;
+        auto outputOperators = trans->getSuccessors();
+        if (outputOperators.size() != 1)
+          continue;
+
+        auto input = trans->getInputs(0);
+        matmul->replaceInput(outputTensor, input);
+        outputTensor->removeTarget(matmul);
+        safeAddTarget(input, matmul);
+        matmul->removePredecessors(trans);
+        trans->removeSuccessors(matmul);
+        auto upstream = input->getSource();
+        if (upstream) {
+          safeAddPredecessor(matmul, upstream);
+          safeAddSuccessor(upstream, matmul);
+        }
+
+        if (idx == 0)
+          matmul->setTransA(!matmul->getTransA());
+        else
+          matmul->setTransB(!matmul->getTransB());
+
+        removeTransposeOp(trans);
+
+        sorted = false;
+        updated = true;
+        fused = true;
+        break;
+      }
+      // Find patterns, make mods
+      if (fused)
+        break;
+    }
+  } while (updated);
 }
 
 Tensor GraphObj::getTensor(int fuid) const {
